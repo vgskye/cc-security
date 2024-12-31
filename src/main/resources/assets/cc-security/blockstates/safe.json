@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "cc-security:block/safe",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "cc-security:block/safe"
+    },
+    "facing=south": {
+      "model": "cc-security:block/safe",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "cc-security:block/safe",
+      "y": 270
+    }
+  }
+}

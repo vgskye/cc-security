@@ -1,0 +1,47 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "function": "minecraft:copy_name",
+              "source": "block_entity"
+            },
+            {
+              "function": "minecraft:copy_nbt",
+              "ops": [
+                {
+                  "op": "replace",
+                  "source": "PasswordSalt",
+                  "target": "BlockEntityTag.PasswordSalt"
+                },
+                {
+                  "op": "replace",
+                  "source": "PasswordHash",
+                  "target": "BlockEntityTag.PasswordHash"
+                },
+                {
+                  "op": "replace",
+                  "source": "Items",
+                  "target": "BlockEntityTag.Items"
+                }
+              ],
+              "source": "block_entity"
+            }
+          ],
+          "name": "cc-security:safe"
+        }
+      ],
+      "rolls": 1.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ]
+    }
+  ]
+}
