@@ -2,6 +2,7 @@ package vg.skye;
 
 import dan200.computercraft.api.lua.IComputerSystem;
 import dan200.computercraft.api.lua.ILuaAPI;
+import dan200.computercraft.api.lua.LuaException;
 import dan200.computercraft.api.lua.LuaFunction;
 import dan200.computercraft.core.apis.ComputerAccess;
 import dan200.computercraft.core.filesystem.FileSystem;
@@ -14,7 +15,9 @@ import vg.skye.mixin.ComputerSystemAccessor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.HexFormat;
+import java.util.Map;
 
 import static vg.skye.CryptoApi.fromBytes;
 
@@ -53,6 +56,7 @@ public class AuditApi implements ILuaAPI {
 
     private final ComputerAccess computer;
     private final byte[] sigKey;
+    private final Map<String, String> observations = new HashMap<>();
 
     public static AuditApi of(IComputerSystem computer) {
         if (computer instanceof ComputerAccess computerSystem) {
@@ -78,7 +82,34 @@ public class AuditApi implements ILuaAPI {
     }
 
     @LuaFunction
-    public final String[] generateAuditReport(String nonce) {
+    public final boolean observe(String key, String value) throws LuaException {
+        if (key.contains("\t"))
+            throw new LuaException("Invalid character in key");
+        if (value.contains("\t"))
+            throw new LuaException("Invalid character in value");
+        return observations.putIfAbsent(key, value) == null;
+    }
+
+    @LuaFunction
+    public final String[] generateObservationReport(String nonce, String key) throws LuaException {
+        if (nonce.contains("\t"))
+            throw new LuaException("Invalid character in nonce");
+        if (key.contains("\t"))
+            throw new LuaException("Invalid character in key");
+        var id = computer.getID();
+        var toSign = String.format("%s\t%d\t%s\t%s", nonce, id, key, observations.getOrDefault(key, ""));
+        var toSignBytes = toSign.getBytes(StandardCharsets.UTF_8);
+        var keySig = new Ed25519PrivateKeyParameters(sigKey);
+        var signer = new Ed25519Signer();
+        signer.init(true, keySig);
+        signer.update(toSignBytes, 0, toSignBytes.length);
+        return new String[]{toSign, fromBytes(signer.generateSignature())};
+    }
+
+    @LuaFunction
+    public final String[] generateAuditReport(String nonce) throws LuaException {
+        if (nonce.contains("\t"))
+            throw new LuaException("Invalid character in nonce");
         try {
             var env = ((ComputerSystemAccessor) computer).getEnvironment();
             var fs = env.getFileSystem();
@@ -93,7 +124,7 @@ public class AuditApi implements ILuaAPI {
             signer.update(toSignBytes, 0, toSignBytes.length);
             return new String[]{toSign, fromBytes(signer.generateSignature())};
         } catch (FileSystemException | IOException e) {
-            throw new RuntimeException(e);
+            throw new LuaException(e.getMessage());
         }
     }
 
